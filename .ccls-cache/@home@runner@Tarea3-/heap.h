@@ -1,3 +1,5 @@
+#include "list.h"
+
 #ifndef Heap_h
 #define Heap_h
 
