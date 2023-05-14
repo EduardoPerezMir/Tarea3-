@@ -15,11 +15,12 @@ typedef struct{
     ArrayList *anterior;
 } tipoTarea;
 
-void agregarTarea(ArrayList* tareas)
+void agregarTarea(HashMap* tareas)
 {
+    if (tareas->size == tareas->capacity)
+        enlarge(tareas);
+    
     tipoTarea* nuevaTarea = NULL;
-    char nombreAux[MAXCHAR + 1];
-    int prioridadAux;
     
     nuevaTarea = (tipoTarea*) malloc(sizeof(tipoTarea));
     printf("Ingrese el nombre de la tarea.\n");
@@ -31,19 +32,39 @@ void agregarTarea(ArrayList* tareas)
     while (getchar() != '\n');
     nuevaTarea->siguiente = NULL;
     nuevaTarea->anterior = NULL;
-    if (getGraph(tareas, nuevaTarea->prioridad) != NULL)
-    {
-        printf("Error. No pueden haber dos tareas con la misma prioridad");
-        return;
-    }
-    pushGraph(tareas, nuevaTarea, nuevaTarea->prioridad);
+    
+    pushGraph(tareas, nuevaTarea->nombre, nuevaTarea->prioridad, nuevaTarea);
 }
 
-void agregarPrecedencia(ArrayList* tareas)
+tipoTarea* buscarTareasSiguientes(tipoTarea* tareaParaRecorrer, tipoTarea* tareaBuscada)
+{
+    tipoTarea* tareaAux = NULL, *tareaAux2 = NULL;
+    int sizeSig = get_size(tareaParaRecorrer->siguiente);
+    
+    for (int i = 0; i < sizeSig; i++)
+    {
+        tareaAux = tareaParaRecorrer->siguiente->data[i];
+        if (strcmp(tareaAux->nombre, tareaBuscada->nombre) == 0)
+        {
+            return tareaAux;
+        }
+        
+    }
+    for (int i = 0; i < sizeSig; i++)
+    {
+        tareaAux = tareaParaRecorrer->siguiente->data[i];
+        if (tareaAux->siguiente != NULL)
+            buscarTareasSiguientes(tareaAux, tareaBuscada);
+    }
+    return NULL;
+}
+
+
+void agregarPrecedencia(HashMap* tareas)
 {
     tipoTarea* tareaAux = NULL, *tareaAux1 = NULL, *tareaAux2 = NULL;
-    int size = get_size(tareas);
-    bool existeT1 = false, existeT2 = false;
+    trio *trioAux1 = NULL, *trioAux2 = NULL;
+    
     char tarea1[MAXCHAR + 1], tarea2[MAXCHAR +1];
     printf("Ingrese el nombre de la tarea 1.\n");
     scanf("%20[^\n]s", tarea1);
@@ -53,82 +74,150 @@ void agregarPrecedencia(ArrayList* tareas)
     scanf("%20[^\n]s", tarea2);
     while (getchar() != '\n');
     int indexT1 = -1, indexT2 = -1;
+    trioAux1 = searchGraph(tareas, tarea1);
+    trioAux2 = searchGraph(tareas, tarea2);
     
-    for (int i = 0; i < tareas->capacity; i++)
+    if (trioAux1 == NULL || trioAux2 == NULL)
     {
-        tareaAux = tareas->data[i];
-        if (tareaAux != NULL)
-        {
-            if (strcmp(tareaAux->nombre, tarea1) == 0)
-            {
-                existeT1 = true;
-                indexT1 = i;
-                size--;
-                if (size == 0)    break;
-            }
-            if (strcmp(tareaAux->nombre, tarea2) == 0)
-            {
-                existeT1 = true;
-                indexT2 = i;
-                size--;
-                if (size == 0)    break;
-            }
-        }
-        if (existeT1 && existeT2)
-            break;
+        printf("Al menos una de las tareas ingresadas no existe en el sistema\n");
+        return;
     }
-    tareaAux1 = tareas->data[indexT1];
-    tareaAux2 = tareas->data[indexT2];
+    
+    if (trioAux1->esta == 0)
+    {
+        ArrayList* listaTareas = listaMapa(tareas);
+        tipoTarea* tareaAux = NULL;
+        trio* trioAux = NULL;
+        trioAux = firstGraph(listaTareas);
+        tareaAux = trioAux->value;
+        if (tareaAux->siguiente != NULL && buscarTareasSiguientes(tareaAux, tareaAux1) != NULL)
+            tareaAux1 = buscarTareasSiguientes(tareaAux, tareaAux1);
+        else
+        {
+            for (int i = 1; i < tareaAux->siguiente->size; i++)
+            {
+                trioAux = nextGraph(listaTareas);
+                tareaAux = trioAux->value;
+                if (buscarTareasSiguientes(tareaAux, tareaAux1) != NULL)
+                    tareaAux1 = buscarTareasSiguientes(tareaAux, tareaAux1);
+            }    
+        }
+    }
+    else
+    {
+        tareaAux1 = trioAux1->value;
+    }
+
+    if (trioAux2->esta == 0)
+    {
+        ArrayList* listaTareas = listaMapa(tareas);
+        tipoTarea* tareaAux = NULL;
+        trio* trioAux = NULL;
+        trioAux = firstGraph(listaTareas);
+        tareaAux = trioAux->value;
+        if (tareaAux->siguiente != NULL && buscarTareasSiguientes(tareaAux, tareaAux2) != NULL)
+            tareaAux2 = buscarTareasSiguientes(tareaAux, tareaAux2);
+        else
+        {
+            for (int i = 1; i < tareaAux->siguiente->size; i++)
+            {
+                trioAux = nextGraph(listaTareas);
+                tareaAux = trioAux->value;
+                if (buscarTareasSiguientes(tareaAux, tareaAux2) != NULL)
+                    tareaAux2 = buscarTareasSiguientes(tareaAux, tareaAux2);
+            }    
+        }
+    }
+    else
+    {
+        tareaAux2 = trioAux2->value;
+    }
+    
+    if (tareaAux1 == NULL || tareaAux2 == NULL)
+    {
+        printf("Al menos una de las tareas ingresadas no existe en el sistema\n");
+        return;
+    }
+    
     if (tareaAux1->siguiente == NULL)
         tareaAux1->siguiente = createList();
     push(tareaAux1->siguiente, tareaAux2, tareaAux1->siguiente->size);
     if (tareaAux2->anterior == NULL)
         tareaAux2->anterior = createList();
     push(tareaAux2->anterior, tareaAux1, tareaAux2->anterior->size);
+    
+    eraseGraph(tareas, tarea2);
 }
 
-void mostrarTareas(ArrayList* tareas)
+void mostrarTareasSiguientes(tipoTarea* tarea)
+{
+    tipoTarea* tareaAux = NULL, *tareaAux2 = NULL;
+    int sizeSig = get_size(tarea->siguiente);
+    
+    for (int i = 0; i < sizeSig; i++)
+    {
+        tareaAux = tarea->siguiente->data[i];
+        
+        printf("Tarea: %s. Prioridad: %d. Tareas Precedentes: ", tareaAux->nombre, tareaAux->prioridad);
+        int sizeAnt = get_size(tareaAux->anterior);
+        
+        for (int i = 0; i < sizeAnt - 1; i++)
+        {
+            tareaAux2 = tareaAux->anterior->data[i];
+            printf("%s, ", tareaAux2->nombre);
+        }
+        
+        tareaAux2 = tareaAux->anterior->data[sizeAnt - 1];
+        printf("%s.\n", tareaAux2->nombre);
+    }
+    
+    for (int i = 0; i < sizeSig; i++)
+    {
+        tareaAux = tarea->siguiente->data[i];
+        if (tareaAux->siguiente != NULL)
+            mostrarTareasSiguientes(tareaAux);
+    }
+}
+
+void mostrarTareas(HashMap* tareas)
 {
     if (tareas->size == 0)    return;
+    ArrayList* listaTareas = listaMapa(tareas);
     
-    tipoTarea* tareaAux = NULL;
-    int size = get_size(tareas);
+    tipoTarea* tareaAux = NULL, *tareaAux2 = NULL;
+    trio* trioAux = NULL;
+    trioAux = firstGraph(listaTareas);
+    tareaAux = trioAux->value;
+    printf("Tarea: %s. Prioridad: %d\n", tareaAux->nombre, tareaAux->prioridad);
     
-    for (int i = 0; i < tareas->capacity; i++)
+    for (int i = 1; i < tareas->size; i++)
     {
-        tareaAux = tareas->data[i];
-        if (tareaAux != NULL && tareaAux->anterior == NULL)
-        {
-            printf("%s, %d\n", tareaAux->nombre, tareaAux->prioridad);
-            size--;
-            if (size == 0)    
-                return;
-        }
+        trioAux = nextGraph(listaTareas);
+        tareaAux = trioAux->value;
+        printf("Tarea: %s. Prioridad: %d\n", tareaAux->nombre, tareaAux->prioridad);
     }
 
-    size = get_size(tareas);
-    tipoTarea *tareaAux2 = NULL;
-    
-    for (int i = 0; i < tareas->capacity; i++)
+    trioAux = firstGraph(listaTareas);
+    tareaAux = trioAux->value;
+    if (tareaAux->siguiente != NULL)
     {
-        tareaAux = tareas->data[i];
-        if (tareaAux != NULL && tareaAux->anterior != NULL)
-        {
-            printf("%s, %d - Precedente: ", tareaAux->nombre, tareaAux->prioridad);
-            for (int j = 0; j < tareaAux->anterior->size; j++)
-            {
-                tareaAux2 = tareaAux->anterior->data[j];
-                printf(", %s", tareaAux2->nombre);
-            }
-            printf("\n");
-            size--;
-            if (size == 0)    break;
-        }
+        mostrarTareasSiguientes(tareaAux);
     }
+    
+    for (int i = 1; i < tareas->size; i++)
+    {
+        trioAux = nextGraph(listaTareas);
+        tareaAux = trioAux->value;
+        if (tareaAux->siguiente != NULL)
+        {
+            mostrarTareasSiguientes(tareaAux);
+        }        
+    }
+    
 }
 
 int main(void){
-    ArrayList* tareas = createList();
+   HashMap* tareas = createGraph();
     
     
     int opcionMenu = -1;
