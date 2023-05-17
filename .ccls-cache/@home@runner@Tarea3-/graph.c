@@ -105,7 +105,6 @@ void insertMap(HashMap * map, void *key1, int key2 ,void * value) {
     map->buckets[indice]->esta = 1;
     map->current = indice;
     map->size++;
-    printf("\n%s", map->buckets[indice]->key1);
 }
 
 void enlarge(HashMap * map) {
@@ -176,12 +175,16 @@ void eraseMap(HashMap * map, void* key1) {
     }
     
     map->buckets[indice]->esta = 0;
+    map->buckets[indice]->key1 = NULL;
     map->size--;
 }
 
 trio *searchMap(HashMap * map,  void* key1) {
     long indice = hash(key1, map->capacity);
-
+    
+    if (map->buckets[indice] == NULL || map->buckets[indice]->key1 == NULL)
+            return NULL;
+    
     while (strcmp(map->buckets[indice]->key1, key1) != 0)
     {
         indice++;
@@ -214,7 +217,7 @@ ArrayList* listaMapa(HashMap* map)
     
     for (int i = 1 ; i < listaOrdenadaElem->size; i++)
     {
-       for (int j = 0; j < listaOrdenadaElem->size - i ;j++)
+       for (int j = 0; j < listaOrdenadaElem->size - i; j++)
        {
            aux1 = listaOrdenadaElem->data[j];
            aux2 = listaOrdenadaElem->data[j+1];
