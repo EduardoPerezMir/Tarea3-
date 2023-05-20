@@ -16,18 +16,10 @@ ArrayList *createList(void) {
 }
 
 void push(ArrayList * l, void * data, int i){
-    if (i >= l->capacity || l->size == l->capacity)
+    if (l->size == l->capacity)
     {
-        if (i <= l->capacity)
-        {
-            l->data = (void **) realloc(l->data, sizeof(void*) * l->capacity * 2);
-            l->capacity *= 2;
-        }
-        else
-        {
-            l->data = (void **) realloc(l->data, sizeof(void*) * l->capacity * i * 2);
-            l->capacity = l->capacity * i * 2;
-        }
+        l->data = (void **) realloc(l->data, sizeof(void*) * l->capacity * 2);
+        l->capacity *= 2;
     }
 
     l->data[i] = data;
@@ -37,10 +29,6 @@ void push(ArrayList * l, void * data, int i){
 void pop(ArrayList * l, int i){
     if (l->size == 0)
         return;
-    
-    if (i < 0)
-            i = l->size + i;
-    
     
     for (int j = i; j < l->size - 1; j++)
         l->data[j] = l->data[j + 1];
@@ -87,11 +75,31 @@ int is_equal(void* key1, void* key2){
     return 0;
 }
 
+HashMap *createMap(int capacity) {
+    HashMap *map = NULL;
+    map = (HashMap*) malloc(sizeof(HashMap));
+    if (map == NULL)
+        return NULL;
+    
+    map->buckets = (trio**) malloc(sizeof(trio*) * capacity);
+    if (map->buckets == NULL)
+        return NULL;
+    
+    for (long i = 0; i < capacity; i++)
+        map->buckets[i] = NULL;
+    
+    map->capacity = capacity;
+    map->size = 0;
+    return map;
+}
+
+
+
 
 void insertMap(HashMap * map, void *key1, int key2 ,void * value) {
     long indice = hash(key1, map->capacity);
     
-    while (map->buckets[indice] != NULL && map->buckets[indice]->esta == 1)
+    while (map->buckets[indice] != NULL)
     {
         indice++;
         if (indice == map->capacity)
@@ -102,68 +110,15 @@ void insertMap(HashMap * map, void *key1, int key2 ,void * value) {
     map->buckets[indice]->key1 = key1;
     map->buckets[indice]->key2 = key2;
     map->buckets[indice]->value = value;
-    map->buckets[indice]->esta = 1;
-    map->current = indice;
     map->size++;
-}
-
-void enlarge(HashMap * map) {
-    trio** auxBuckets = (trio**) malloc(sizeof(trio*) * map->capacity);
-    
-    for (long i = 0; i < map->capacity; i++)
-    {
-        auxBuckets[i] = NULL;
-        if (map->buckets[i] != NULL)
-        {
-            auxBuckets[i] = (trio*) malloc(sizeof(trio));
-            auxBuckets[i]->value = map->buckets[i]->value;
-            auxBuckets[i]->key1 = map->buckets[i]->key1;
-            auxBuckets[i]->key2 = map->buckets[i]->key2;
-            map->buckets[i]->esta = 0;
-        }
-    }
-    int auxCapacity = map->size;
-   
-    free(map->buckets);
-    map->buckets = (trio **) malloc(sizeof(trio*) * map->capacity * 2);
-    if (map->buckets == NULL)
-        return;
-    
-    for (long i = 0; i < auxCapacity; i++)
-        if (auxBuckets[i] != NULL)
-        {
-            insertMap(map, auxBuckets[i]->key1, auxBuckets[i]->key2, auxBuckets[i]->value);
-        }
-    
-     map->capacity *= 2;
-}
-
-HashMap *createMap(int capacity) {
-    HashMap *map = NULL;
-    map = (HashMap*) malloc(sizeof(HashMap));
-    if (map == NULL)
-        return NULL;
-    
-    map->buckets = (trio**) malloc(sizeof(trio*) * capacity);
-    if (map->buckets == NULL)
-    {
-        return NULL;
-    }
-    
-    for (long i = 0; i < capacity; i++)
-    {
-        map->buckets[i] = NULL;
-    }
-    
-    map->capacity = capacity;
-    map->size = 0;
-    map->current = -1;
-    return map;
 }
 
 void eraseMap(HashMap * map, void* key1) {    
     long indice = hash(key1, map->capacity);
-
+    
+    if (map->buckets[indice] == NULL)
+        return;
+    
     while (strcmp(map->buckets[indice]->key1, key1) != 0)
     {
         indice++;
@@ -174,15 +129,61 @@ void eraseMap(HashMap * map, void* key1) {
             return;
     }
     
-    map->buckets[indice]->esta = 0;
-    map->buckets[indice]->key1 = NULL;
+    map->buckets[indice] = NULL;
     map->size--;
+}
+
+ArrayList* listaNoOrdenadaMapa(HashMap* map)
+{
+    ArrayList* lista = createList();
+    
+    for (int i = 0; i < map->capacity; i++)
+    {
+        if (map->buckets[i] != NULL)
+        {
+            push(lista, map->buckets[i], lista->size);
+        }
+    }
+    return lista;
+}
+
+void enlarge(HashMap * map) {
+    trio** auxBuckets = (trio**) malloc(sizeof(trio*) * map->size);
+    
+    ArrayList* listaAux = listaNoOrdenadaMapa(map);
+
+    for (long i = 0; i < map->capacity; i++)
+    {
+        if (map->buckets[i] != NULL)
+        {
+            eraseMap(map, map->buckets[i]->key1);
+        }
+    }
+
+    map->buckets = (trio **) realloc(map->buckets, sizeof(trio*) * map->capacity * 2);
+    if (map->buckets == NULL)
+        return;
+
+    for (long i = map->capacity; i < map->capacity * 2; i++)
+    {
+        map->buckets[i] = NULL;
+    }
+    
+    map->capacity *= 2;
+    
+    
+    for (long i = 0; i < listaAux->size; i++)
+    {
+        trio* trioAux = (trio*) malloc(sizeof(trio));
+        trioAux = listaAux->data[i];
+        insertMap(map, trioAux->key1, trioAux->key2, trioAux->value);
+    }
 }
 
 trio *searchMap(HashMap * map,  void* key1) {
     long indice = hash(key1, map->capacity);
     
-    if (map->buckets[indice] == NULL || map->buckets[indice]->key1 == NULL)
+    if (map->buckets[indice] == NULL)
             return NULL;
     
     while (strcmp(map->buckets[indice]->key1, key1) != 0)
@@ -195,8 +196,6 @@ trio *searchMap(HashMap * map,  void* key1) {
             return NULL;
     }
     
-    map->current = indice;
-
     return map->buckets[indice];
 }
 
@@ -206,7 +205,7 @@ ArrayList* listaMapa(HashMap* map)
     
     for (int i = 0; i < map->capacity; i++)
     {
-        if (map->buckets[i] != NULL && map->buckets[i]->esta == 1)
+        if (map->buckets[i] != NULL)
         {
             push(listaOrdenadaElem, map->buckets[i], listaOrdenadaElem->size);
         }

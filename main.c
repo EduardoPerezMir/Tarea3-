@@ -11,10 +11,11 @@
 typedef struct{
     char nombre[MAXCHAR + 1];
     int prioridad;
-    bool fueMostrada;
-    bool estaEnMapa;
+    bool fueMostrada; // Variable que ayuda para la opción de mostrar las tareas. 
+    bool estaEnMapa; // Variable que ayuda para la opción de eliminar tarea.
     ArrayList *siguiente;
     ArrayList *anterior;
+    // Se implementan dos listas de adyacencia.
 } tipoTarea;
 
 void agregarTarea(HashMap* tareas)
@@ -32,6 +33,7 @@ void agregarTarea(HashMap* tareas)
     printf("Ingrese la prioridad de la tarea.\n");
     scanf("%d", &(nuevaTarea->prioridad));
     while (getchar() != '\n');
+    
     nuevaTarea->siguiente = NULL;
     nuevaTarea->anterior = NULL;
     nuevaTarea->fueMostrada = false;
@@ -40,13 +42,15 @@ void agregarTarea(HashMap* tareas)
     pushGraph(tareas, nuevaTarea->nombre, nuevaTarea->prioridad, nuevaTarea);
 }
 
+// La función 'buscarTareasSiguientes' buscaría todas las tareas siguientes (recorre grafo hacia todas las listas de adyacencia 'siguientes').
+
 tipoTarea* buscarTareasSiguientes(tipoTarea* tareaParaRecorrer, char* tareaBuscada)
 {
     if (tareaParaRecorrer->siguiente == NULL) return NULL;
-    
+
     tipoTarea* tareaAux = NULL, *tareaAux2 = NULL;
     int sizeSig = get_size(tareaParaRecorrer->siguiente);
-    
+
     for (int i = 0; i < sizeSig; i++)
     {
         tareaAux = tareaParaRecorrer->siguiente->data[i];
@@ -54,10 +58,6 @@ tipoTarea* buscarTareasSiguientes(tipoTarea* tareaParaRecorrer, char* tareaBusca
         {
             return tareaAux;
         }
-        
-    }
-    for (int i = 0; i < sizeSig; i++)
-    {
         tareaAux = tareaParaRecorrer->siguiente->data[i];
         if (tareaAux->siguiente != NULL)
             return buscarTareasSiguientes(tareaAux, tareaBuscada);
@@ -65,12 +65,14 @@ tipoTarea* buscarTareasSiguientes(tipoTarea* tareaParaRecorrer, char* tareaBusca
     return NULL;
 }
 
+// La función 'buscarTareasAnteriores' buscaría todas las tareas anteriores (recorre grafo hacia todas las listas de adyacencia 'anteriores').
+
 tipoTarea* buscarTareasAnteriores(tipoTarea* tareaParaRecorrer, char* tareaBuscada)
 {
     if (tareaParaRecorrer->anterior == NULL) return NULL;
     tipoTarea* tareaAux = NULL, *tareaAux2 = NULL;
     int sizeAnt = get_size(tareaParaRecorrer->anterior);
-    
+
     for (int i = 0; i < sizeAnt; i++)
     {
         tareaAux = tareaParaRecorrer->anterior->data[i];
@@ -78,22 +80,24 @@ tipoTarea* buscarTareasAnteriores(tipoTarea* tareaParaRecorrer, char* tareaBusca
         {
             return tareaAux;
         }
-        
     }
+    
     for (int i = 0; i < sizeAnt; i++)
     {
         tareaAux = tareaParaRecorrer->anterior->data[i];
         if (tareaAux->anterior != NULL)
             return buscarTareasSiguientes(tareaAux, tareaBuscada);
     }
+    
     return NULL;
 }
+
 
 void agregarPrecedencia(HashMap* tareas)
 {
     if (tareas->size == 0)
     {
-        printf("No existen registros en el sistema.");
+        printf("No existen registros en el sistema.\n");
         return;
     }
     
@@ -111,9 +115,12 @@ void agregarPrecedencia(HashMap* tareas)
     while (getchar() != '\n');
     int indexT1 = -1, indexT2 = -1;
 
-    printf("La tarea %s es precedente a la tarea %s.", tarea1, tarea2);
+    if (strcmp(tarea1, tarea2) == 0)
+    {
+        printf("Error. No se puede establecer esta relación de precedencia.\n");
+        return;
+    }
 
-    
     if (searchGraph(tareas, tarea1) == NULL)
     {
         ArrayList* listaTareas = listaMapa(tareas);
@@ -123,7 +130,14 @@ void agregarPrecedencia(HashMap* tareas)
         tareaAux = trioAux->value;
         
         if (buscarTareasSiguientes(tareaAux, tarea1) != NULL)
+        {
             tareaAux1 = buscarTareasSiguientes(tareaAux, tarea1);
+            if (buscarTareasSiguientes(tareaAux1, tarea2) != NULL || buscarTareasAnteriores(tareaAux1, tarea2) != NULL)
+            {
+                printf("Error. No se puede establecer esta relación de precedencia.\n");
+                return;
+            }
+        }
         else
         {
             for (int i = 1; i < listaTareas->size; i++)
@@ -133,6 +147,11 @@ void agregarPrecedencia(HashMap* tareas)
                 if (buscarTareasSiguientes(tareaAux, tarea1) != NULL)
                 {
                     tareaAux1 = buscarTareasSiguientes(tareaAux, tarea1);
+                    if (buscarTareasSiguientes(tareaAux1, tarea2) != NULL || buscarTareasAnteriores(tareaAux1, tarea2) != NULL)
+                    {
+                        printf("Error. No se puede establecer esta relación de precedencia.\n");
+                        return;
+                    }
                     break;
                 }
             }
@@ -155,10 +174,10 @@ void agregarPrecedencia(HashMap* tareas)
         if (buscarTareasSiguientes(tareaAux, tarea2) != NULL)
         {
             tareaAux2 = buscarTareasSiguientes(tareaAux, tarea2);
-
+            
             if (buscarTareasSiguientes(tareaAux2, tarea1) != NULL || buscarTareasAnteriores(tareaAux2, tarea1) != NULL)
             {
-                printf("Error. No se puede establecer esta relación de precedencia.");
+                printf("Error. No se puede establecer esta relación de precedencia.\n");
                 return;
             }
         }
@@ -174,7 +193,7 @@ void agregarPrecedencia(HashMap* tareas)
                     tareaAux2 = buscarTareasSiguientes(tareaAux, tarea2);
                     if (buscarTareasSiguientes(tareaAux2, tarea1) != NULL || buscarTareasAnteriores(tareaAux2, tarea1) != NULL)
                     {
-                        printf("Error. No se puede establecer esta relación de precedencia.");
+                        printf("Error. No se puede establecer esta relación de precedencia.\n");
                         return;
                     }
                     break;
@@ -201,10 +220,13 @@ void agregarPrecedencia(HashMap* tareas)
         tareaAux2->anterior = createList();
     push(tareaAux2->anterior, tareaAux1, tareaAux2->anterior->size);
     
-    tareaAux2->estaEnMapa = false;
-    
-    if (searchGraph(tareas, tarea2) != NULL)
+    if (tareaAux2->estaEnMapa != false)
+    {
         eraseGraph(tareas, tarea2);
+        tareaAux2->estaEnMapa = false;
+    }
+    
+    printf("La tarea %s es precedente a la tarea %s.\n", tarea1, tarea2);
 }
 
 void mostrarTareasLista(ArrayList* lista)
@@ -270,7 +292,7 @@ void armarLista(tipoTarea* tarea)
     }
     
     ordenarLista(listaAux);
-    printf("a");
+    
     for (int i = 0; i < sizeSig; i++)
     {
         tareaAux = tarea->siguiente->data[i];
@@ -367,10 +389,9 @@ void desvincularTareasSiguientesMapa(ArrayList* lista, HashMap* tareas, char mar
         tareaAux = lista->data[i];
         if (tareaAux->anterior->size == 1)
         {
-            tareaAux->anterior = NULL;
+            pop(tareaAux->anterior, 0);
             tareaAux->estaEnMapa = true;
             pushGraph(tareas, tareaAux->nombre, tareaAux->prioridad, tareaAux);
-            break;
         }
         else
         {
@@ -432,8 +453,6 @@ void marcarTarea(HashMap* tareas)
     printf("Ingrese el nombre de la tarea a marcar como completada.\n");
     scanf("%20[^\n]s", tareaMarcada);
     while (getchar() != '\n');
-    
-    printf("La tarea %s ha sido marcada como completa.", tareaMarcada);
 
     if (searchGraph(tareas, tareaMarcada) == NULL)
     {
@@ -474,39 +493,58 @@ void marcarTarea(HashMap* tareas)
     
     if (tareaMarcadaAux == NULL)
     {
-        printf("Error: La tarea señalada no existe en el sistema.");
+        printf("Error: La tarea señalada no existe en el sistema.\n");
         return;
     }
 
     tipoTarea* tareaAux2 = NULL;
     tipoTarea* tareaAux3 = NULL;
-    
-    if (tareaMarcadaAux->estaEnMapa == true)
+    char respuesta;
+    if (tareaMarcadaAux->siguiente != NULL || tareaMarcadaAux->anterior != NULL)
     {
-        desvincularTareasSiguientesMapa(tareaMarcadaAux->siguiente, tareas, tareaMarcadaAux->nombre);
-        eraseMap(tareas, tareaMarcadaAux);
-    }
-    else
-    {
-        if (tareaMarcadaAux->siguiente != NULL)
-        {
-            desvincularTareasSiguientesLista(tareaMarcadaAux->siguiente, tareaMarcadaAux->anterior, tareas, tareaMarcadaAux->nombre);
-        }
         
-        for (int i = 0; i < tareaMarcadaAux->anterior->size; i++)
+        printf("¿Está seguro de eliminar esta tarea con relaciones de precedencia? s/n\n");
+        scanf("%c", &respuesta);
+    }
+    if (respuesta == 's')
+    {
+        if (tareaMarcadaAux->estaEnMapa == true)
         {
-            tareaAux2 = tareaMarcadaAux->anterior->data[i];
-
-            for (int j = 0; j < tareaAux2->siguiente->size; j++)
+    
+                desvincularTareasSiguientesMapa(tareaMarcadaAux->siguiente, tareas, tareaMarcadaAux->nombre);
+                eraseMap(tareas, tareaMarcadaAux);
+        }
+        else
+        {
+            if (tareaMarcadaAux->siguiente != NULL)
             {
-                tareaAux3 = tareaAux2->siguiente->data[j];
-                if (strcmp(tareaMarcada, tareaAux3->nombre) == 0)
+                desvincularTareasSiguientesLista(tareaMarcadaAux->siguiente, tareaMarcadaAux->anterior, tareas, tareaMarcadaAux->nombre);
+            }
+            
+            for (int i = 0; i < tareaMarcadaAux->anterior->size; i++)
+            {
+                tareaAux2 = tareaMarcadaAux->anterior->data[i];
+    
+                for (int j = 0; j < tareaAux2->siguiente->size; j++)
                 {
-                    pop(tareaAux2->siguiente, j);
-                    break;
+                    tareaAux3 = tareaAux2->siguiente->data[j];
+                    if (strcmp(tareaMarcada, tareaAux3->nombre) == 0)
+                    {
+                        pop(tareaAux2->siguiente, j);
+                        break;
+                    }
                 }
             }
         }
+        printf("La tarea %s ha sido marcada como completa.", tareaMarcada);
+    }
+    else if (respuesta == 'n')
+    {
+        printf("No se ha eliminado la tarea.");
+    }
+    else
+    {
+        printf("No se ingresó una opción válida.");
     }
 }
 

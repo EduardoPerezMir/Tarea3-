@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -7,7 +8,7 @@
 #define Grafo_h
 
 #define MAXCHAR 20
-#define INITIALCAPAC 20
+#define INITIALCAPAC 10
 
 typedef struct ArrayList ArrayList;
 
@@ -33,18 +34,17 @@ typedef struct trio{
     char *key1;
     int key2;
     void * value;
-    int esta;
 } trio;
 
 struct HashMap{
     trio **buckets;
-    long size; //cantidad de datos/pairs en la tabla
-    long capacity; //capacidad de la tabla
-    long current; //indice del ultimo dato accedido
+    long size;
+    long capacity;
 };
 
 
 HashMap * createMap(int capacity);
+ArrayList* listaNoOrdenadaMapa(HashMap* map);
 void insertMap(HashMap* table, void* key1, int key2, void* value);
 void eraseMap(HashMap* table, void* key1);
 trio * searchMap(HashMap* table, void* key1);
