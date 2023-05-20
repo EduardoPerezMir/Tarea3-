@@ -36,18 +36,6 @@ void pop(ArrayList * l, int i){
     (l->size)--;
 }
 
-void* get(ArrayList * l, int i){
-    if (i >= l->capacity)
-        return NULL;
-    else
-    {
-        if (i < 0)
-            i = l->size + i;
-
-        return l->data[i];
-    }
-}
-
 int get_size(ArrayList * l){
     return l->size;
 }
@@ -75,20 +63,20 @@ int is_equal(void* key1, void* key2){
     return 0;
 }
 
-HashMap *createMap(int capacity) {
+HashMap *createMap(void) {
     HashMap *map = NULL;
     map = (HashMap*) malloc(sizeof(HashMap));
     if (map == NULL)
         return NULL;
     
-    map->buckets = (trio**) malloc(sizeof(trio*) * capacity);
+    map->buckets = (trio**) malloc(sizeof(trio*) * INITIALCAPAC);
     if (map->buckets == NULL)
         return NULL;
     
-    for (long i = 0; i < capacity; i++)
+    for (long i = 0; i < INITIALCAPAC; i++)
         map->buckets[i] = NULL;
     
-    map->capacity = capacity;
+    map->capacity = INITIALCAPAC;
     map->size = 0;
     return map;
 }
@@ -101,6 +89,11 @@ void insertMap(HashMap * map, void *key1, int key2 ,void * value) {
     
     while (map->buckets[indice] != NULL)
     {
+        if (strcmp(key1, map->buckets[indice]->key1) == 0)
+        {
+            printf("No es posible ingresar una tarea con nombre repetido.");
+            return;
+        }
         indice++;
         if (indice == map->capacity)
             indice = 0;
@@ -229,45 +222,4 @@ ArrayList* listaMapa(HashMap* map)
        }
     }
     return listaOrdenadaElem;
-}
-
-trio* firstMap(ArrayList* lista) {
-    lista->current = 0;
-    return lista->data[0];
-}
-
-trio* nextMap(ArrayList* lista) {
-    lista->current++;
-    return lista->data[lista->current];
-}
-
-HashMap* createGraph()
-{
-    HashMap* grafo = createMap(INITIALCAPAC);
-    return grafo;
-}
-
-void pushGraph(HashMap* grafo, void *clave1, int clave2, void* value)
-{
-    insertMap(grafo, clave1, clave2, value);
-}
-
-trio* searchGraph(HashMap* grafo, void* clave)
-{
-    return searchMap(grafo, clave);
-}
-
-void eraseGraph(HashMap* grafo, void *clave)
-{
-    eraseMap(grafo, clave);
-}
-
-trio* firstGraph(ArrayList* lista)
-{
-    return firstMap(lista);
-}
-
-trio* nextGraph(ArrayList* lista)
-{
-    return nextMap(lista);
 }
